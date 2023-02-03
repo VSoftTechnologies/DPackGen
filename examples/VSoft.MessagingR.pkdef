@@ -1,0 +1,125 @@
+{
+	definitionSchemaVersion: 0,
+	name : "VSoft.MessagingR",
+	packagesFolder: ".\\packages",
+	projectGUID: "{8FF7EA44-009F-4370-BDA2-3C30D26F6FC9}",
+	frameworkType : "VCL",
+	packageType : "Runtime",
+	targetPlatforms : [
+		{
+		  compiler : "XE2",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE3",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE4",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE5",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE6",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE7",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "XE8",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D10.0",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D10.1",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D10.2",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D10.3",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D10.4",
+		  platforms : "Win32, Win64",
+		  template : "default"
+		},
+		{
+		  compiler : "D11",
+		  platforms : "Win32, Win64",
+		  template : "default",
+		  libSuffix : "%compilerVersion%"
+		}
+
+	],
+	templates : [
+		{   
+			name : "default",
+			libSuffix : "%compilerVersion%",
+			folderNameTemplate: "Rad Studio %Compiler% %CompilerCodeName%",		
+			descriptionTemplate: "VSoft.Messaging Runtime for Delphi %Compiler%",
+			files : [
+			".\\src\\VSoft.Messaging.pas",
+			".\\src\\VSoft.Messaging.Internal.pas",
+			".\\src\\VSoft.Messaging.Dispatchers.pas",
+			".\\src\\VSoft.Messaging.Channel.pas"
+			],
+			requires : [
+				"rtl"
+			],
+			dpkOptions: [
+				"{$R *.res}",
+				"{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}",
+				"{$ALIGN 8}",
+				"{$ASSERTIONS ON}",
+				"{$BOOLEVAL OFF}",
+				"{$DEBUGINFO ON}",
+				"{$EXTENDEDSYNTAX ON}",
+				"{$IMPORTEDDATA ON}",
+				"{$IOCHECKS ON}",
+				"{$LOCALSYMBOLS ON}",
+				"{$LONGSTRINGS ON}",
+				"{$OPENSTRINGS ON}",
+				"{$OPTIMIZATION OFF}",
+				"{$OVERFLOWCHECKS OFF}",
+				"{$RANGECHECKS OFF}",
+				"{$REFERENCEINFO ON}",
+				"{$SAFEDIVIDE OFF}",
+				"{$STACKFRAMES ON}",
+				"{$TYPEDADDRESS OFF}",
+				"{$VARSTRINGCHECKS ON}",
+				"{$WRITEABLECONST OFF}",
+				"{$MINENUMSIZE 1}",
+				"{$IMAGEBASE $400000}",
+				"{$DEFINE DEBUG}",
+				"{$ENDIF IMPLICITBUILDING}",
+				"{$DESCRIPTION '%description%'}",
+				"{$LIBSUFFIX '%LIBSUFFIX%'}",
+				"{$RUNONLY}",
+				"{$IMPLICITBUILD OFF}"
+			]
+		}
+	]
+}
