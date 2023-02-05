@@ -22,7 +22,7 @@ type
     function GetPlatforms : TArray<TPlatform>;
     function GetTemplateName : string;
   public
-    constructor Create;override;
+    constructor Create(const projectType : TProjectType);override;
   end;
 
 implementation
@@ -34,7 +34,7 @@ uses
 
 { TTargetPlatform }
 
-constructor TTargetPlatform.Create;
+constructor TTargetPlatform.Create(const projectType : TProjectType);
 begin
   inherited;
   FCompilerVersion := TCompilerVersion.UnknownVersion;

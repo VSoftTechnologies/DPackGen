@@ -11,14 +11,15 @@ uses
   DPackGen.Interfaces;
 
 type
-  TPackageDefinition = class(TInterfacedObject, IPackageDefinition)
+  TProjectDefinition = class(TInterfacedObject, IProjectDefinition)
   private
     FFileName : string;
     FSchemaVersion : integer;
     FName : string;
     FProjectGUID : string;
     FPackagesFolder : string;
-    FFrameworkType : string;
+    FProjectType : TProjectType;
+    FFrameworkType : TFrameworkType;
     FPackageType : TPackageType;
 
     FTemplates : IList<ITemplate>;
@@ -28,10 +29,11 @@ type
   protected
     function GetName: string;
     function GetProjectGUID : string;
-    function GetFrameworkType : string;
+    function GetProjectType : TProjectType;
+    function GetFrameworkType : TFrameworkType;
     function GetPackageType : TPackageType;
 
-    class function InternalReadDefinitionJson(const fileName : string; const jsonObject : TJsonObject) : IPackageDefinition;
+    class function InternalReadDefinitionJson(const fileName : string; const jsonObject : TJsonObject) : IProjectDefinition;
     function LoadFromJson(const jsonObject : TJsonObject) : boolean;
     function LoadTemplatesFromJson(const templatesArray : TJsonArray) : boolean;
     function LoadTemplateFromJson(const templateObj : TJsonObject; const templateNo : integer) : boolean;
@@ -51,7 +53,7 @@ type
     constructor Create(const fileName : string);
 
   public
-    class function LoadFromFile(const fileName : string) : IPackageDefinition;
+    class function LoadFromFile(const fileName : string) : IProjectDefinition;
 
   end;
 
@@ -66,9 +68,9 @@ uses
   DPackGen.Generator;
 
 
-{ TPackageDefinition }
+{ TProjectDefinition }
 
-function TPackageDefinition.FindTemplate(const name : string) : ITemplate;
+function TProjectDefinition.FindTemplate(const name : string) : ITemplate;
 begin
   result := FTemplates.FirstOrDefault(
     function(const item : ITemplate) : boolean
@@ -78,7 +80,7 @@ begin
 end;
 
 
-function TPackageDefinition.ApplyTemplates: Boolean;
+function TProjectDefinition.ApplyTemplates: Boolean;
 var
   template : ITemplate;
   targetPlatform : ITargetPlatform;
@@ -129,16 +131,17 @@ begin
 
 end;
 
-constructor TPackageDefinition.Create(const fileName: string);
+constructor TProjectDefinition.Create(const fileName: string);
 begin
   FFileName := fileName;
   FTemplates := TCollections.CreateList<ITemplate>;
   FTargetPlatforms := TCollections.CreateList<ITargetPlatform>;
-  FFrameworkType := 'None';
+  FProjectType := TProjectType.Bpl;
+  FFrameworkType := TFrameworkType.VCL;
   FPackageType := TPackageType.Runtime;
 end;
 
-function TPackageDefinition.Generate: boolean;
+function TProjectDefinition.Generate: boolean;
 var
   targetPlatform : ITargetPlatform;
   sPackagesFolder : string;
@@ -181,27 +184,32 @@ begin
 
 end;
 
-function TPackageDefinition.GetFrameworkType: string;
+function TProjectDefinition.GetFrameworkType: TFrameworkType;
 begin
   result := FFrameworkType;
 end;
 
-function TPackageDefinition.GetName: string;
+function TProjectDefinition.GetName: string;
 begin
   result := FName;
 end;
 
-function TPackageDefinition.GetPackageType: TPackageType;
+function TProjectDefinition.GetPackageType: TPackageType;
 begin
   result := FPackageType;
 end;
 
-function TPackageDefinition.GetProjectGUID: string;
+function TProjectDefinition.GetProjectGUID: string;
 begin
   result := FProjectGUID;
 end;
 
-procedure TPackageDefinition.GetTokensForTargetPlatform(const targetPlatform: ITargetPlatform; const list: TStringList);
+function TProjectDefinition.GetProjectType: TProjectType;
+begin
+  result := FProjectType;
+end;
+
+procedure TProjectDefinition.GetTokensForTargetPlatform(const targetPlatform: ITargetPlatform; const list: TStringList);
 begin
   list.Clear;
   list.Add('compiler=' + CompilerToString(targetPlatform.CompilerVersion));
@@ -213,7 +221,7 @@ begin
   list.Add('libSuffix=' + CompilerToLibSuffix(targetPlatform.CompilerVersion));
 end;
 
-class function TPackageDefinition.InternalReadDefinitionJson(const fileName: string; const jsonObject: TJsonObject): IPackageDefinition;
+class function TProjectDefinition.InternalReadDefinitionJson(const fileName: string; const jsonObject: TJsonObject): IProjectDefinition;
 begin
  result := nil;
   if not jsonObject.Contains('definitionSchemaVersion') then
@@ -222,12 +230,12 @@ begin
     exit;
   end;
 
-  result := TPackageDefinition.Create(fileName);
+  result := TProjectDefinition.Create(fileName);
   if not result.LoadFromJson(jsonObject) then
     result := nil;
 end;
 
-class function TPackageDefinition.LoadFromFile(const fileName: string): IPackageDefinition;
+class function TProjectDefinition.LoadFromFile(const fileName: string): IProjectDefinition;
 var
   jsonObj : TJsonObject;
 begin
@@ -255,12 +263,11 @@ begin
 
 end;
 
-function TPackageDefinition.LoadFromJson(const jsonObject: TJsonObject): boolean;
+function TProjectDefinition.LoadFromJson(const jsonObject: TJsonObject): boolean;
 var
   templatesArray : TJsonArray;
   targetPlatformsArray : TJsonArray;
   sValue : string;
-  framework : TFrameworkType;
 begin
   result := true;
   FSchemaVersion := jsonObject.I['definitionSchemaVersion'];
@@ -292,9 +299,12 @@ begin
   sValue := jsonObject.S['frameworkType'];
   if sValue <> '' then
   begin
-    framework := StringToFrameworkType(sValue);
-    if framework <> TFrameworkType.Invalid then
-      FFrameworkType := sValue;
+    FFrameworkType := StringToFrameworkType(sValue);
+    if FFrameworkType = TFrameworkType.Invalid then
+    begin
+      WriteLn('ERROR: frameworkType [' + sValue + '] is not valid (None, VCL or FMX)');
+      exit(false);
+    end;
   end;
   sValue := jsonObject.S['packageType'];
   if sValue = '' then
@@ -307,6 +317,18 @@ begin
   begin
     WriteLn('ERROR: packageType [' + sValue + '] is not valid (Runtime or Designtime)');
     exit(false);
+  end;
+
+  //default project type is bpl
+  sValue := jsonObject.S['projectType'];
+  if sValue <> '' then
+  begin
+    FProjectType := StringToProjectType(sValue);
+    if FProjectType = TProjectType.Invalid then
+    begin
+      WriteLn('ERROR: projectType [' + sValue + '] is not valid (exe, dll or bpl)');
+      exit(false);
+    end;
   end;
 
 
@@ -339,7 +361,7 @@ begin
 
 end;
 
-function TPackageDefinition.LoadTargetPlatformsFromJson(const targetPlatformsArray : TJsonArray): boolean;
+function TProjectDefinition.LoadTargetPlatformsFromJson(const targetPlatformsArray : TJsonArray): boolean;
 var
   i : integer;
   targetPlatform : ITargetPlatform;
@@ -353,14 +375,14 @@ begin
 
   for i := 0 to targetPlatformsArray.Count - 1 do
   begin
-    targetPlatform := TTargetPlatform.Create;
+    targetPlatform := TTargetPlatform.Create(FProjectType);
     FTargetPlatforms.Add(targetPlatform);
     result := targetPlatform.LoadFromJson(targetPlatformsArray.O[i]) and result;
   end;
 
 end;
 
-function TPackageDefinition.LoadTemplateFromJson(const templateObj: TJsonObject;  const templateNo: integer): boolean;
+function TProjectDefinition.LoadTemplateFromJson(const templateObj: TJsonObject;  const templateNo: integer): boolean;
 var
   template : ITemplate;
 begin
@@ -370,12 +392,12 @@ begin
     result := false;
     Writeln('ERROR: Template #' + IntToStr(templateNo) + ' is missing the required name field!');
   end;
-  template := TTemplate.Create;
+  template := TTemplate.Create(FProjectType);
   result := result and template.LoadFromJson(templateObj);
   FTemplates.Add(template);
 end;
 
-function TPackageDefinition.LoadTemplatesFromJson(const templatesArray: TJsonArray): boolean;
+function TProjectDefinition.LoadTemplatesFromJson(const templatesArray: TJsonArray): boolean;
 var
   i : integer;
 begin
@@ -387,7 +409,7 @@ begin
   end;
 end;
 
-function TPackageDefinition.ReplaceTargetPlatformTokens: boolean;
+function TProjectDefinition.ReplaceTargetPlatformTokens: boolean;
 var
   tokenList : TStringList;
   targetPlatform : ITargetPlatform;
@@ -434,7 +456,7 @@ begin
 
 end;
 
-function TPackageDefinition.TokenMatchEvaluator(const match : TMatch) : string;
+function TProjectDefinition.TokenMatchEvaluator(const match : TMatch) : string;
 begin
   if match.Success and (match.Groups.Count = 2) then
   begin

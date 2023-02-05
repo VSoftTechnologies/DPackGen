@@ -24,6 +24,15 @@ type
 
   ITemplateBase = interface(IDefNode)
   ['{89B4E8DD-C39E-4B31-9CAC-6145E74F69EE}']
+
+    function GetCode : TStrings;
+    procedure SetCode(const value : TStrings);
+
+    function GetPreFiles : TStrings;
+    procedure SetPreFiles(const value : TStrings);
+    function GetPostFiles : TStrings;
+    procedure SetPostFiles(const value : TStrings);
+
     function GetFiles : TStrings;
     procedure SetFiles(const value : TStrings);
     function GetRequires : TStrings;
@@ -31,6 +40,10 @@ type
 
     function GetDPKOptions : TStrings;
     procedure SetDPKOptions(const value : TStrings);
+
+    function GetNameSpacePrefixes : TStrings;
+    procedure SetNameSpacePrefixes(const value : TStrings);
+
     function GetLibSuffix : string;
     procedure SetLibSuffix(const value : string);
 
@@ -43,9 +56,12 @@ type
     property DPKOptions : TStrings read GetDPKOptions write SetDPKOptions;
     property FolderNameTemplate : string read GetFolderNameTemplate write SetFolderNameTemplate;
     property DescriptionTemplate : string read GetDescriptionTemplate write SetDescriptionTemplate;
+    property PreFiles : TStrings read GetPreFiles write SetPreFiles;
     property Files : TStrings read GetFiles write SetFiles;
+    property PostFiles : TStrings read GetPostFiles write SetPostFiles;
     property LibSuffix : string read GetLibSuffix write SetLibSuffix;
     property Requires : TStrings read GetRequires write SetRequires;
+    property NameSpacePrefixes : TStrings read GetNameSpacePrefixes write SetNameSpacePrefixes;
   end;
 
   ITemplate = interface(ITemplateBase)
@@ -67,18 +83,20 @@ type
   end;
 
 
-  IPackageDefinition = interface(IDefNode)
+  IProjectDefinition = interface(IDefNode)
   ['{53C03E8C-9646-4B99-949B-A02A752A932F}']
     function GetName : string;
     function GetProjectGUID : string;
-    function GetFrameworkType : string;
+    function GetProjectType : TProjectType;
+    function GetFrameworkType : TFrameworkType;
     function GetPackageType : TPackageType;
 
     function Generate : boolean;
 
     property Name : string read GetName;
     property ProjectGUID : string read GetProjectGUID;
-    property FrameworkType : string read GetFrameworkType;
+    property ProjectType : TProjectType read GetProjectType;
+    property FrameworkType : TFrameworkType read GetFrameworkType;
     property PackageType : TPackageType read GetPackageType;
   end;
 

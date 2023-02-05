@@ -60,10 +60,16 @@ type
 
     TPlatforms = set of TPlatform;
 
+    TProjectType = (Invalid, Exe, Bpl, Dll);
+
     TFrameworkType = (Invalid, None,VCL, FMX);
 
     TPackageType = (Invalid, Runtime, Designtime);
 
+const
+   projectFileExt : array[TProjectType] of string = ('','.dpr','.dpk','.dpr');
+   projectStart : array[TProjectType] of string = ('','program','package','library');
+   borlandProjectType : array[TProjectType] of string = ('','Application','Package','Application');
 implementation
 
 end.

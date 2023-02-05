@@ -23,6 +23,9 @@ function CompilerToDPROJVersion(const compiler : TCompilerVersion) : string;
 function StringToFrameworkType(const value : string) : TFrameworkType;
 function FrameworkTypeToString(const value : TFrameworkType) : string;
 
+function StringToProjectType(const value : string) : TProjectType;
+function ProjectTypeToString(const value : TProjectType) : string;
+
 function StringToPackageType(const value : string) : TPackageType;
 
 
@@ -59,7 +62,6 @@ uses
 function StringToFrameworkType(const value : string) : TFrameworkType;
 var
   iValue : integer;
-  sValue : string;
 begin
   iValue := GetEnumValue(typeInfo(TFrameworkType), value);
   if iValue = -1 then
@@ -73,10 +75,26 @@ begin
   result := GetEnumName(TypeInfo(TFrameworkType), ord(value));
 end;
 
+function StringToProjectType(const value : string) : TProjectType;
+var
+  iValue : integer;
+begin
+  iValue := GetEnumValue(typeInfo(TProjectType), value);
+  if iValue = -1 then
+    result := TProjectType.Invalid
+  else
+    result := TProjectType(iValue);
+end;
+
+function ProjectTypeToString(const value : TProjectType) : string;
+begin
+  result := GetEnumName(TypeInfo(TProjectType), ord(value));
+end;
+
+
 function StringToPackageType(const value : string) : TPackageType;
 var
   iValue : integer;
-  sValue : string;
 begin
   iValue := GetEnumValue(typeInfo(TPackageType), value);
   if iValue = -1 then

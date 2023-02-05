@@ -42,11 +42,11 @@ end;
 
 class function TDpackGenApplication.Generate: integer;
 var
-  packageDef : IPackageDefinition;
+  packageDef : IProjectDefinition;
 begin
   WriteLn('loading definition file');
 
-  packageDef := TPackageDefinition.LoadFromFile(TGenerateOptions.DefinitionFile);
+  packageDef := TProjectDefinition.LoadFromFile(TGenerateOptions.DefinitionFile);
   if packageDef = nil then
   begin
     WriteLn('Invalid Package Definition file.');

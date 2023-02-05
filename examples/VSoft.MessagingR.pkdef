@@ -8,7 +8,7 @@
 	targetPlatforms : [
 		{
 		  compiler : "XE2",
-		  platforms : "Win32, Win64",
+		  platforms : "Win32, Win64, OSX32",
 		  template : "default"
 		},
 		{
@@ -70,21 +70,27 @@
 		  compiler : "D11",
 		  platforms : "Win32, Win64",
 		  template : "default",
-		  libSuffix : "%compilerVersion%"
+		  libSuffix : "%LIBSUFFIX%"
 		}
 
 	],
 	templates : [
 		{   
 			name : "default",
-			libSuffix : "%compilerVersion%",
+			libSuffix : "%LIBSUFFIX%",
 			folderNameTemplate: "Rad Studio %Compiler% %CompilerCodeName%",		
 			descriptionTemplate: "VSoft.Messaging Runtime for Delphi %Compiler%",
+			namespacePrefix : {
+				Win32 : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde",
+				Win64 : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win"
+			},
 			files : [
 			".\\src\\VSoft.Messaging.pas",
 			".\\src\\VSoft.Messaging.Internal.pas",
 			".\\src\\VSoft.Messaging.Dispatchers.pas",
-			".\\src\\VSoft.Messaging.Channel.pas"
+			".\\src\\VSoft.Messaging.Channel.pas",
+			".\\src\\VSoft.Messaging.Form.pas={DummyForm}",
+			".\\src\\VSoft.Messaging.Frame.pas={DummyFrame: TFrame}"
 			],
 			requires : [
 				"rtl"

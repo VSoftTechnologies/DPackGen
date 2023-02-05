@@ -6,20 +6,31 @@ interface
 uses
   System.Classes,
   JsonDataObjects,
+  DPackGen.Types,
   DPackGen.Interfaces;
 
 type
   TTemplateBase = class(TInterfacedObject, ITemplateBase)
   private
+    FProjectType : TProjectType;
+    FPreFiles   : TStringList;
+    FPostFiles  : TStringList;
     FFiles      : TStringList;
     FRequires   : TStringList;
     FDPKOptions : TStringList;
+    FCode       : TStringList;
+    FNSPrefix   : TStringList;
     FLibSuffix  : string;
     FFolderNameTemplate : string;
     FDescriptionTemplate : string;
 
   protected
     function IsTemplate : boolean;virtual;
+    function GetPreFiles : TStrings;
+    procedure SetPreFiles(const value : TStrings);
+    function GetPostFiles : TStrings;
+    procedure SetPostFiles(const value : TStrings);
+
     function GetFiles : TStrings;
     procedure SetFiles(const value : TStrings);
     function GetRequires : TStrings;
@@ -27,6 +38,12 @@ type
 
     function GetDPKOptions : TStrings;
     procedure SetDPKOptions(const value : TStrings);
+
+    function GetCode : TStrings;
+    procedure SetCode(const value : TStrings);
+    function GetNameSpacePrefixes : TStrings;
+    procedure SetNameSpacePrefixes(const value : TStrings);
+
 
     function GetLibSuffix : string;
     procedure SetLibSuffix(const value : string);
@@ -37,12 +54,11 @@ type
     procedure SetDescriptionTemplate(const value : string);
 
 
+    procedure LoadListFromArray(const jsonArray : TJsonArray; const list : TStringList);
+
     function LoadFromJson(const jsonObject: TJsonObject): Boolean;virtual;
-    function LoadFilesFromJson(const filesArray : TJsonArray) : Boolean;
-    function LoadRequiresFromJson(const requiresArray : TJsonArray) : Boolean;
-    function LoadDPKOptionsFromJson(const dpkOptionsArray : TJsonArray) : Boolean;
   public
-    constructor Create;virtual;
+    constructor Create(const projectType : TProjectType);virtual;
 
     destructor Destroy;override;
 
@@ -52,19 +68,38 @@ implementation
 
 { TTemplateBase }
 
-constructor TTemplateBase.Create;
+constructor TTemplateBase.Create(const projectType : TProjectType);
 begin
+  FProjectType := projectType;
+  FPreFiles   := TStringList.Create;
+  FPostFiles  := TStringList.Create;
   FFiles      := TStringList.Create;
+  FCode       := TStringList.Create;
   FRequires   := TStringList.Create;
   FDPKOptions := TStringList.Create;
+  FNSPrefix   := TStringList.Create;
+  //Default NS Prefixes
+  FNSPrefix.Values['Base'] := 'System;Xml;Data;Datasnap;Web;Soap';
+  FNSPrefix.Values['Win32'] := 'Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde';
+  FNSPrefix.Values['Win64'] := 'Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win';
+  //TODO Add NS prefixes for other platforms;
 end;
 
 destructor TTemplateBase.Destroy;
 begin
+  FPreFiles.Free;
+  FPostFiles.Free;
   FFiles.Free;
   FRequires.Free;
   FDPKOptions.Free;
+  FCode.Free;
+  FNSPrefix.Free;
   inherited;
+end;
+
+function TTemplateBase.GetCode: TStrings;
+begin
+  result := FCode;
 end;
 
 function TTemplateBase.GetDescriptionTemplate: string;
@@ -92,6 +127,21 @@ begin
   result := FLibSuffix;
 end;
 
+function TTemplateBase.GetNameSpacePrefixes: TStrings;
+begin
+  result := FNSPrefix;
+end;
+
+function TTemplateBase.GetPostFiles: TStrings;
+begin
+  result := FPostFiles;
+end;
+
+function TTemplateBase.GetPreFiles: TStrings;
+begin
+  result := FPreFiles;
+end;
+
 function TTemplateBase.GetRequires: TStrings;
 begin
   result := FRequires;
@@ -102,41 +152,13 @@ begin
   result := false;
 end;
 
-function TTemplateBase.LoadDPKOptionsFromJson(const dpkOptionsArray: TJsonArray): Boolean;
-var
-  i : integer;
-  sValue : string;
-begin
-  result := true;
-  if dpkOptionsArray.Count = 0 then
-    exit;
-  for i := 0 to dpkOptionsArray.Count - 1 do
-  begin
-    sValue := dpkOptionsArray.S[i];
-    FDPKOptions.Add(sValue);
-  end;
-end;
-
-function TTemplateBase.LoadFilesFromJson(const filesArray: TJsonArray): Boolean;
-var
-  i : integer;
-  sValue : string;
-begin
-  result := true;
-  if filesArray.Count = 0 then
-    exit;
-  for i := 0 to filesArray.Count - 1 do
-  begin
-    sValue := filesArray.S[i];
-    FFiles.Add(sValue);
-  end;
-end;
 
 function TTemplateBase.LoadFromJson(const jsonObject: TJsonObject): Boolean;
 var
   hasChildren : boolean;
   sValue : string;
   collectionObj : TJsonArray;
+  nsPrefixObj : TJsonObject;
 begin
   result := true;
   if IsTemplate then
@@ -198,7 +220,7 @@ begin
 
   collectionObj := jsonObject.A['files'];
   if collectionObj.Count > 0 then
-    result := LoadFilesFromJson(collectionObj) and result
+    LoadListFromArray(collectionObj, FFiles)
   else
   begin
     result := false;
@@ -207,7 +229,7 @@ begin
 
   collectionObj := jsonObject.A['requires'];
   if collectionObj.Count > 0 then
-    result := LoadRequiresFromJson(collectionObj) and result
+    LoadListFromArray(collectionObj, FRequires)
   else
   begin
     result := false;
@@ -216,28 +238,52 @@ begin
 
   collectionObj := jsonObject.A['dpkOptions'];
   if collectionObj.Count > 0 then
-    result := LoadDPKOptionsFromJson(collectionObj) and result
+    LoadListFromArray(collectionObj, FDPKOptions)
   else
   begin
     result := false;
     Writeln('ERROR: Required array [dpkOptions] is empty or missing');
   end;
 
+  collectionObj := jsonObject.A['preFiles'];
+  if collectionObj.Count > 0 then
+    LoadListFromArray(collectionObj, FPreFiles);
+
+  collectionObj := jsonObject.A['postFiles'];
+  if collectionObj.Count > 0 then
+    LoadListFromArray(collectionObj, FPostFiles);
+
+  collectionObj := jsonObject.A['code'];
+  if collectionObj.Count > 0 then
+    LoadListFromArray(collectionObj, FCode);
+
+
+  if jsonObject.Contains('namespacePrefix') then
+  begin
+    nsPrefixObj := jsonObject.O['namespacePrefix'];
+    //we don't have the platforms here so cannot validate them, will do that in the targetplatform class
+    for var i := 0 to nsPrefixObj.Count -1 do
+      FNSPrefix.Values[nsPrefixObj.Names[i]] := nsPrefixObj.S[nsPrefixObj.Names[i]] ;
+  end;
 end;
 
-function TTemplateBase.LoadRequiresFromJson(const requiresArray: TJsonArray): Boolean;
+procedure TTemplateBase.LoadListFromArray(const jsonArray: TJsonArray; const list: TStringList);
 var
   i : integer;
   sValue : string;
 begin
-  result := true;
-  if requiresArray.Count = 0 then
+  if jsonArray.Count = 0 then
     exit;
-  for i := 0 to requiresArray.Count - 1 do
+  for i := 0 to jsonArray.Count - 1 do
   begin
-    sValue := requiresArray.S[i];
-    FRequires.Add(sValue);
+    sValue := jsonArray.S[i];
+    list.Add(sValue);
   end;
+end;
+
+procedure TTemplateBase.SetCode(const value: TStrings);
+begin
+  FCode.Assign(value);
 end;
 
 procedure TTemplateBase.SetDescriptionTemplate(const value: string);
@@ -263,6 +309,21 @@ end;
 procedure TTemplateBase.SetLibSuffix(const value: string);
 begin
   FLibSuffix := value;
+end;
+
+procedure TTemplateBase.SetNameSpacePrefixes(const value: TStrings);
+begin
+  FNSPrefix.Assign(value);
+end;
+
+procedure TTemplateBase.SetPostFiles(const value: TStrings);
+begin
+  FPostFiles.Assign(value);
+end;
+
+procedure TTemplateBase.SetPreFiles(const value: TStrings);
+begin
+  FPreFiles.Assign(value);
 end;
 
 procedure TTemplateBase.SetRequires(const value: TStrings);
