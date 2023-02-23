@@ -6,12 +6,14 @@ interface
 uses
   System.Classes,
   JsonDataObjects,
+  Spring.Collections,
   DPackGen.Types,
   DPackGen.Interfaces;
 
 type
   TTemplateBase = class(TInterfacedObject, ITemplateBase)
   private
+    //don't forget to update assign if you add new props
     FProjectType : TProjectType;
     FPreFiles   : TStringList;
     FPostFiles  : TStringList;
@@ -23,8 +25,10 @@ type
     FLibSuffix  : string;
     FFolderNameTemplate : string;
     FDescriptionTemplate : string;
-
+    FMainSourceTemplate : string;
+    FDPMPackageReferences : IList<IDPMPackageReference>;
   protected
+    procedure Assign(const source : ITemplateBase);virtual;
     function IsTemplate : boolean;virtual;
     function GetPreFiles : TStrings;
     procedure SetPreFiles(const value : TStrings);
@@ -52,7 +56,11 @@ type
     procedure SetFolderNameTemplate(const value : string);
     function GetDescriptionTemplate : string;
     procedure SetDescriptionTemplate(const value : string);
+    function GetMainSourceTemplate : string;
+    procedure SetMainSourceTemplate(const value : string);
 
+    function GetDPMPackages : IList<IDPMPackageReference>;
+    procedure SetDPMPackages(const value : IList<IDPMPackageReference>);
 
     procedure LoadListFromArray(const jsonArray : TJsonArray; const list : TStringList);
 
@@ -66,7 +74,27 @@ type
 
 implementation
 
+
 { TTemplateBase }
+
+uses DPackGen.PackageReference;
+
+procedure TTemplateBase.Assign(const source: ITemplateBase);
+begin
+  FPreFiles.Assign(source.PreFiles);
+  FPostFiles.Assign(source.PostFiles);
+  FFiles.Assign(source.Files);
+  FRequires.Assign(source.Requires);
+  FDPKOptions.Assign(source.DPKOptions);
+  FCode.Assign(source.Code);
+  FNSPrefix.Assign(source.NameSpacePrefixes);
+  FLibSuffix  := source.LibSuffix;
+  FFolderNameTemplate := source.FolderNameTemplate;
+  FDescriptionTemplate := source.DescriptionTemplate;
+  FMainSourceTemplate := source.MainSourceTemplate;
+  FDPMPackageReferences := source.DPMPackages;
+
+end;
 
 constructor TTemplateBase.Create(const projectType : TProjectType);
 begin
@@ -78,6 +106,7 @@ begin
   FRequires   := TStringList.Create;
   FDPKOptions := TStringList.Create;
   FNSPrefix   := TStringList.Create;
+  FDPMPackageReferences := TCollections.CreateList<IDPMPackageReference>;
   //Default NS Prefixes
   FNSPrefix.Values['Base'] := 'System;Xml;Data;Datasnap;Web;Soap';
   FNSPrefix.Values['Win32'] := 'Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde';
@@ -112,6 +141,11 @@ begin
   result := FDPKOptions;
 end;
 
+function TTemplateBase.GetDPMPackages: IList<IDPMPackageReference>;
+begin
+  result := FDPMPackageReferences;
+end;
+
 function TTemplateBase.GetFiles: TStrings;
 begin
   result := FFiles;
@@ -125,6 +159,11 @@ end;
 function TTemplateBase.GetLibSuffix: string;
 begin
   result := FLibSuffix;
+end;
+
+function TTemplateBase.GetMainSourceTemplate: string;
+begin
+  result := FMainSourceTemplate;
 end;
 
 function TTemplateBase.GetNameSpacePrefixes: TStrings;
@@ -159,6 +198,7 @@ var
   sValue : string;
   collectionObj : TJsonArray;
   nsPrefixObj : TJsonObject;
+  packageRef : IDPMPackageReference;
 begin
   result := true;
   if IsTemplate then
@@ -208,6 +248,14 @@ begin
     WriteLn('ERROR: Required property "descriptionTemplate" is empty or missing');
     exit(false);
   end;
+
+  FMainSourceTemplate := jsonObject.S['mainSourceTemplate'];
+  if FMainSourceTemplate = '' then
+  begin
+    WriteLn('ERROR: Required property "mainSourceTemplate" is empty or missing');
+    exit(false);
+  end;
+
 
 
   FLibSuffix := jsonObject.S['libSuffix'];
@@ -265,6 +313,20 @@ begin
     for var i := 0 to nsPrefixObj.Count -1 do
       FNSPrefix.Values[nsPrefixObj.Names[i]] := nsPrefixObj.S[nsPrefixObj.Names[i]] ;
   end;
+
+  //
+  if jsonObject.Contains('dpm') then
+  begin
+
+    collectionObj := jsonObject.A['dpm'];
+    for var i := 0 to collectionObj.Count -1 do
+    begin
+      packageRef := TPackageReference.Create;
+      result := packageRef.LoadFromJson(collectionObj.O[i]) and result;
+      FDPMPackageReferences.Add(packageRef);
+    end;
+  end;
+
 end;
 
 procedure TTemplateBase.LoadListFromArray(const jsonArray: TJsonArray; const list: TStringList);
@@ -281,6 +343,7 @@ begin
   end;
 end;
 
+
 procedure TTemplateBase.SetCode(const value: TStrings);
 begin
   FCode.Assign(value);
@@ -296,6 +359,12 @@ begin
   FDPKOptions.Assign(value);
 end;
 
+procedure TTemplateBase.SetDPMPackages(const value: IList<IDPMPackageReference>);
+begin
+  FDPMPackageReferences.Clear;
+  FDPMPackageReferences.AddRange(value);
+end;
+
 procedure TTemplateBase.SetFiles(const value: TStrings);
 begin
   FFiles.Assign(value);
@@ -309,6 +378,11 @@ end;
 procedure TTemplateBase.SetLibSuffix(const value: string);
 begin
   FLibSuffix := value;
+end;
+
+procedure TTemplateBase.SetMainSourceTemplate(const value: string);
+begin
+  FMainSourceTemplate := value;
 end;
 
 procedure TTemplateBase.SetNameSpacePrefixes(const value: TStrings);

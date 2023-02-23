@@ -60,7 +60,7 @@ type
 
     TPlatforms = set of TPlatform;
 
-    TProjectType = (Invalid, Exe, Bpl, Dll);
+    TProjectType = (Invalid, Application, Package, DLL);
 
     TFrameworkType = (Invalid, None,VCL, FMX);
 

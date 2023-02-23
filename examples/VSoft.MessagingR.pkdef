@@ -1,90 +1,90 @@
 {
-	definitionSchemaVersion: 0,
-	name : "VSoft.MessagingR",
-	packagesFolder: ".\\packages",
-	projectGUID: "{8FF7EA44-009F-4370-BDA2-3C30D26F6FC9}",
-	frameworkType : "VCL",
-	packageType : "Runtime",
-	targetPlatforms : [
+	"definitionSchemaVersion": 0,
+	"name" : "VSoft.MessagingR",
+	"packagesFolder": ".\\packages",
+	"projectGUID": "{8FF7EA44-009F-4370-BDA2-3C30D26F6FC9}",
+	"frameworkType" : "VCL",
+	"packageType" : "Runtime",
+	"targetPlatforms" : [
 		{
-		  compiler : "XE2",
-		  platforms : "Win32, Win64, OSX32",
-		  template : "default"
+		  "compiler" : "XE2",
+		  "platforms" : "Win32, Win64, OSX32",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE3",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE3",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE4",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE4",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE5",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE5",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE6",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE6",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE7",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE7",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "XE8",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "XE8",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D10.0",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "D10.0",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D10.1",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "D10.1",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D10.2",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "D10.2",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D10.3",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "D10.3",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D10.4",
-		  platforms : "Win32, Win64",
-		  template : "default"
+		  "compiler" : "D10.4",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default"
 		},
 		{
-		  compiler : "D11",
-		  platforms : "Win32, Win64",
-		  template : "default",
-		  libSuffix : "%LIBSUFFIX%"
+		  "compiler" : "D11",
+		  "platforms" : "Win32, Win64",
+		  "template" : "default",
+		  "libSuffix" : "%LIBSUFFIX%"
 		}
 
 	],
-	templates : [
+	"templates" : [
 		{   
-			name : "default",
-			libSuffix : "%LIBSUFFIX%",
-			folderNameTemplate: "Rad Studio %Compiler% %CompilerCodeName%",		
-			descriptionTemplate: "VSoft.Messaging Runtime for Delphi %Compiler%",
-			namespacePrefix : {
-				Win32 : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde",
-				Win64 : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win"
+			"name" : "default",
+			"libSuffix" : "%LIBSUFFIX%",
+			"folderNameTemplate": "Rad Studio %Compiler% %CompilerCodeName%",		
+			"descriptionTemplate": "VSoft.Messaging Runtime for Delphi %Compiler%",
+			"namespacePrefix" : {
+				"Win32" : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde",
+				"Win64" : "Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win"
 			},
-			files : [
+			"files" : [
 			".\\src\\VSoft.Messaging.pas",
 			".\\src\\VSoft.Messaging.Internal.pas",
 			".\\src\\VSoft.Messaging.Dispatchers.pas",
@@ -92,10 +92,10 @@
 			".\\src\\VSoft.Messaging.Form.pas={DummyForm}",
 			".\\src\\VSoft.Messaging.Frame.pas={DummyFrame: TFrame}"
 			],
-			requires : [
+			"requires" : [
 				"rtl"
 			],
-			dpkOptions: [
+			"dpkOptions": [
 				"{$R *.res}",
 				"{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}",
 				"{$ALIGN 8}",

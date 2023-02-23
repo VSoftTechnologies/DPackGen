@@ -107,7 +107,7 @@ begin
       sList.Add('');
 
       //for exe and dll's the end. should be in the code.
-      if definition.ProjectType = TProjectType.Bpl then
+      if definition.ProjectType = TProjectType.Package then
         sList.Add('end.');
 
 
@@ -131,6 +131,7 @@ var
   sourceElement : IXMLDOMElement;
   platformsElement : IXMLDOMElement;
   tmpElement : IXMLDOMElement;
+  dpmElement : IXMLDOMElement;
   sPlatform : string;
   sValue : string;
   sMainSource : string;
@@ -206,14 +207,24 @@ const
     end;
   end;
 
+  function AddPackageReference(const parentElement : IXMLDOMElement; const packageReference : IDPMPackageReference) : IXMLDOMElement;
+  begin
+    result := AddElement(parentElement,'PackageReference');
+    result.setAttribute('id', packageReference.Id);
+    result.setAttribute('version', packageReference.Version);
+    result.setAttribute('platform', packageReference.Platform);
+    for var dep in packageReference.Dependencies do
+      AddPackageReference(result, dep);
+
+  end;
 
 
 begin
-  result := false;
+//  result := false;
   xmlDoc := CoDOMDocument60.Create;
   projectElement := CreateElement('Project');
   xmlDoc.documentElement := projectElement;
-  sMainSource := definition.Name + projectFileExt[definition.ProjectType] ;
+  sMainSource := targetPlatform.MainSourceTemplate + projectFileExt[definition.ProjectType];
 
   propertyGroupElement := CreatePropertyGroup;
     AddElement(propertyGroupElement, 'ProjectGuid', definition.ProjectGUID);
@@ -288,16 +299,18 @@ begin
   propertyGroupElement := CreatePropertyGroup;
     propertyGroupElement.setAttribute('Condition', '''$(Base)''!=''''');
       AddElement(propertyGroupElement, 'SanitizedProjectName', StringReplace(definition.Name, '.','_',[rfReplaceAll]) );
-      AddElement(propertyGroupElement, 'DllSuffix', targetPlatform.LibSuffix );
+      if (definition.ProjectType = TProjectType.Package) and (targetPlatform.LibSuffix <> '') then
+          AddElement(propertyGroupElement, 'DllSuffix', targetPlatform.LibSuffix );;
+
 
       case definition.ProjectType of
         TProjectType.Invalid: ;
-        TProjectType.Exe:
+        TProjectType.Application:
         begin
           AddElement(propertyGroupElement, 'GenPackage', 'false');
           AddElement(propertyGroupElement, 'GenDll', 'false');
         end;
-        TProjectType.Bpl:
+        TProjectType.Package:
         begin
           AddElement(propertyGroupElement, 'GenPackage', 'true');
           AddElement(propertyGroupElement, 'GenDll', 'true');
@@ -311,7 +324,7 @@ begin
       end;
 
       AddElement(propertyGroupElement, 'Description', targetPlatform.DescriptionTemplate );
-      if definition.ProjectType = TProjectType.Bpl then
+      if definition.ProjectType = TProjectType.Package then
       begin
         if definition.PackageType = TPackageType.Runtime then
           AddElement(propertyGroupElement, 'RuntimeOnlyPackage', 'true' )
@@ -330,7 +343,12 @@ begin
       propertyGroupElement.setAttribute('Condition', '''$(Base_' + sPlatform + ')''!=''''');
       case platform of
         TPlatform.Win32,
-        TPlatform.Win64: AddElement(propertyGroupElement, 'DCC_Namespace', targetPlatform.NameSpacePrefixes.Values[sPlatform] +';$(DCC_Namespace)' );
+        TPlatform.Win64:
+        begin
+          AddElement(propertyGroupElement, 'DCC_Namespace', targetPlatform.NameSpacePrefixes.Values[sPlatform] +';$(DCC_Namespace)' );
+          if (definition.ProjectType <> TProjectType.Package) and (targetPlatform.LibSuffix <> '') then
+            AddElement(propertyGroupElement, 'OutputExt', targetPlatform.LibSuffix );;
+        end;
         TPlatform.OSX32: ;
         TPlatform.OSX64   :  AddElement(propertyGroupElement, 'BT_BuildType', 'Debug' );
         TPlatform.OSXARM64: AddElement(propertyGroupElement, 'BT_BuildType', 'Debug' );
@@ -404,7 +422,7 @@ begin
       AddElement(tmpElement, 'CfgParent', 'Base');
 
   projectExtensionsElement := AddElement(projectElement, 'ProjectExtensions');
-      AddElement(projectExtensionsElement, 'Borland.Personality', 'Borland.Personality.12'); //TODO : Lookup for personality version!
+      AddElement(projectExtensionsElement, 'Borland.Personality', 'Borland.Personality.12'); //doesn't seem to have changed
       AddElement(projectExtensionsElement, 'Borland.ProjectType', borlandProjectType[definition.ProjectType] );
       borlandProjectElement := AddElement(projectExtensionsElement, 'BorlandProject');
         delphiPersonalityElement := AddElement(borlandProjectElement, 'Delphi.Personality');
@@ -417,10 +435,17 @@ begin
           tmpElement := AddElement(platformsElement, 'Platform', 'True');
           tmpElement.setAttribute('value',PlatformToDPROJPlatform(platform));
         end;
+        if targetPlatform.DPMPackages.Any then
+        begin
+          dpmElement := AddElement(projectExtensionsElement, 'DPM');
+          for var packageRef in targetPlatform.DPMPackages do
+          begin
+            tmpElement := AddPackageReference(dpmElement, packageRef);
+            dpmElement.appendChild(tmpElement);
+          end;
+        end;
 
-//  <Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
-//    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
-//    <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+
 
   //TODO : This has changed many times over the versions, generate based on compiler version!
   tmpElement := AddElement(projectElement, 'Import' );
@@ -437,9 +462,9 @@ begin
 
     
   PrettyFormatXML(xmlDoc.documentElement,4);
-  xmlDoc.save('c:\temp\test.dproj');
-
-
+//  xmlDoc.save('c:\temp\test.dproj');
+  xmlDoc.save(TPath.Combine(outputFolder, definition.Name + '.dproj'));
+  result := true;
 end;
 
 

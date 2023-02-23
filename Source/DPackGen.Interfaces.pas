@@ -5,6 +5,7 @@ interface
 uses
   System.Classes,
   JsonDataObjects,
+  Spring.Collections,
   DPackGen.Types;
 
 type
@@ -13,14 +14,24 @@ type
     function LoadFromJson(const jsonObject : TJsonObject) : boolean;
   end;
 
+  IDPMPackageReference = interface;
 
-//  IDefPackageNode = interface(IDefNode)
-//  ['{C0A5D98D-4BF4-4038-A41E-87E26EB435AC}']
-//    function GetName : string;
-//    procedure SetName(const value : string);
-//
-//    property Name : string read GetName write SetName;
-//  end;
+  IDPMPackageReference = interface(IDefNode)
+  ['{9487BF3A-56F6-43B9-A40A-6C01B1697D4A}']
+    function GetId : string;
+    procedure SetId(const value : string);
+    function GetVersion : string;
+    procedure SetVersion(const value : string);
+    function GetPlatform : string;
+    procedure SetPlatform(const value : string);
+    function GetDependencies : IList<IDPMPackageReference>;
+    procedure SetDependencies(const value : IList<IDPMPackageReference>);
+
+    property Id : string read GetId write SetId;
+    property Version : string read GetVersion write SetVersion;
+    property Platform : string read GetPlatform write SetPlatform;
+    property Dependencies : IList<IDPMPackageReference> read GetDependencies write SetDependencies;
+  end;
 
   ITemplateBase = interface(IDefNode)
   ['{89B4E8DD-C39E-4B31-9CAC-6145E74F69EE}']
@@ -41,6 +52,7 @@ type
     function GetDPKOptions : TStrings;
     procedure SetDPKOptions(const value : TStrings);
 
+
     function GetNameSpacePrefixes : TStrings;
     procedure SetNameSpacePrefixes(const value : TStrings);
 
@@ -50,18 +62,28 @@ type
     function GetFolderNameTemplate : string;
     procedure SetFolderNameTemplate(const value : string);
 
+    function GetMainSourceTemplate : string;
+    procedure SetMainSourceTemplate(const value : string);
+
     function GetDescriptionTemplate : string;
     procedure SetDescriptionTemplate(const value : string);
 
+    function GetDPMPackages : IList<IDPMPackageReference>;
+    procedure SetDPMPackages(const value : IList<IDPMPackageReference>);
+
+    property Code : TStrings read GetCode write SetCode;
     property DPKOptions : TStrings read GetDPKOptions write SetDPKOptions;
     property FolderNameTemplate : string read GetFolderNameTemplate write SetFolderNameTemplate;
     property DescriptionTemplate : string read GetDescriptionTemplate write SetDescriptionTemplate;
+    property MainSourceTemplate : string read GetMainSourceTemplate write SetMainSourceTemplate;
     property PreFiles : TStrings read GetPreFiles write SetPreFiles;
     property Files : TStrings read GetFiles write SetFiles;
     property PostFiles : TStrings read GetPostFiles write SetPostFiles;
     property LibSuffix : string read GetLibSuffix write SetLibSuffix;
     property Requires : TStrings read GetRequires write SetRequires;
     property NameSpacePrefixes : TStrings read GetNameSpacePrefixes write SetNameSpacePrefixes;
+
+    property DPMPackages : IList<IDPMPackageReference> read GetDPMPackages write SetDPMPackages;
   end;
 
   ITemplate = interface(ITemplateBase)
@@ -76,6 +98,7 @@ type
     function GetCompilerVersion : TCompilerVersion;
     function GetPlatforms : TArray<TPlatform>;
     function GetTemplateName : string;
+    procedure Assign(const source : ITemplateBase);
 
     property CompilerVersion: TCompilerVersion read GetCompilerVersion;
     property Platforms: TArray<TPlatform> read GetPlatforms;
@@ -90,7 +113,6 @@ type
     function GetProjectType : TProjectType;
     function GetFrameworkType : TFrameworkType;
     function GetPackageType : TPackageType;
-
     function Generate : boolean;
 
     property Name : string read GetName;

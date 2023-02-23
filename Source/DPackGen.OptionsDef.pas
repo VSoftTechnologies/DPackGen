@@ -15,6 +15,12 @@ type
     DpkOnly        : boolean;
   end;
 
+  TSyncDependenciesOptions = record
+  class var
+    ProjectFile : string;
+    DefinitionFile : string;
+  end;
+
 
 implementation
 
@@ -53,6 +59,19 @@ begin
                       TGenerateOptions.DpkOnly := value;
                   end);
 
+  cmd := TOptionsRegistry.RegisterCommand('syncdpm','','sync dpm dependendcies from dproj', '', 'syncdpm dproj pkgdef');
+  option := cmd.RegisterUnNamedOption<string>('defFile','The path to the package definition file',
+                  procedure(const value : string)
+                  begin
+                      TSyncDependenciesOptions.DefinitionFile := value;
+                  end);
+  option.Required := true;
+  option := cmd.RegisterUnNamedOption<string>('dproj','The path to the package definition file',
+                  procedure(const value : string)
+                  begin
+                      TSyncDependenciesOptions.ProjectFile := value;
+                  end);
+  option.Required := true;
 
 
 end;

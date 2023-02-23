@@ -18,7 +18,9 @@ uses
   DPackGen.Utils in 'DPackGen.Utils.pas',
   DPackGen.Types in 'DPackGen.Types.pas',
   DPackGen.Banner in 'DPackGen.Banner.pas',
-  DPackGen.MSXML in 'DPackGen.MSXML.pas';
+  DPackGen.MSXML in 'DPackGen.MSXML.pas',
+  DPackGen.Utils.Path in 'Utils\DPackGen.Utils.Path.pas',
+  DPackGen.PackageReference in 'DPackGen.PackageReference.pas';
 
 begin
   try

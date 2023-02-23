@@ -17,6 +17,7 @@ type
     FPlatforms : TArray<TPlatform>;
     FTemplateName : string;
   protected
+    procedure Assign(const source : ITemplateBase);override;
     function LoadFromJson(const jsonObject: TJsonObject): Boolean;override;
     function GetCompilerVersion : TCompilerVersion;
     function GetPlatforms : TArray<TPlatform>;
@@ -33,6 +34,12 @@ uses
   DPackGen.Utils;
 
 { TTargetPlatform }
+
+procedure TTargetPlatform.Assign(const source: ITemplateBase);
+begin
+  inherited;
+
+end;
 
 constructor TTargetPlatform.Create(const projectType : TProjectType);
 begin

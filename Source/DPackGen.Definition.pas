@@ -47,6 +47,7 @@ type
     function FindTemplate(const name : string) : ITemplate;
     function ApplyTemplates : Boolean;
 
+    function ExpandFiles(const baseFolder : string; const targetPlatform : ITargetPlatform) : boolean;
 
     function Generate : boolean;
 
@@ -60,10 +61,13 @@ type
 implementation
 
 uses
+  System.Types,
   System.SysUtils,
   System.IOUtils,
+  VSoft.AntPatterns,
   DPackGen.Template,
   DPackGen.Utils,
+  DPackGen.Utils.Path,
   DPackGen.TargetPlatform,
   DPackGen.Generator;
 
@@ -92,7 +96,8 @@ begin
     function(const item : ITargetPlatform) : boolean
     begin
       result := item.TemplateName <> '';
-    end) then  exit;
+    end) then
+      exit;
 
   //if we don't have templates then the spec is not valid.
   if not FTemplates.Any then
@@ -107,24 +112,12 @@ begin
       continue;
     template := FindTemplate(targetPlatform.TemplateName);
     if template <> nil then
-    begin
-      //libsuffix can be set in targetplatform or template.
-      if targetPlatform.LibSuffix = '' then
-        targetPlatform.LibSuffix := template.LibSuffix;
-
-      targetPlatform.FolderNameTemplate := template.FolderNameTemplate;
-      targetPlatform.DescriptionTemplate := template.DescriptionTemplate;
-
-      targetPlatform.Files.Assign(template.Files);
-      targetPlatform.Requires.Assign(template.Requires);
-      targetPlatform.DPKOptions.Assign(template.DPKOptions);
-    end
+      targetPlatform.Assign(template)
     else
     begin
       WriteLn('A referenced template [' + targetPlatform.TemplateName + '] was not found.');
       exit(false);
     end;
-
   end;
 
 
@@ -136,16 +129,81 @@ begin
   FFileName := fileName;
   FTemplates := TCollections.CreateList<ITemplate>;
   FTargetPlatforms := TCollections.CreateList<ITargetPlatform>;
-  FProjectType := TProjectType.Bpl;
+  FProjectType := TProjectType.Package;
   FFrameworkType := TFrameworkType.VCL;
   FPackageType := TPackageType.Runtime;
+end;
+
+function ProcessPatterns(const baseFolder : string; const patterns : TArray<IFileSystemPattern>; const targetPlatform : ITargetPlatform) : boolean;
+var
+  files : TStringDynArray;  
+  fileName : string;
+begin
+  result := true;
+  for var pattern in  patterns do
+  begin
+    files := TDirectory.GetFiles(pattern.Directory, pattern.FileMask, TSearchOption.soTopDirectoryOnly);
+    for var f in files do
+    begin
+      if not TFile.Exists(f) then //should never happen
+        raise Exception.Create('File not found : ' + f);
+      fileName := ExtractRelativePath(baseFolder,f);
+
+      //might have already been added in the original files list
+      if targetPlatform.Files.IndexOfName(fileName) = -1 then
+        targetPlatform.Files.Add(fileName);  
+    end;
+   
+  end;
+end;
+
+
+function TProjectDefinition.ExpandFiles(const baseFolder : string; const targetPlatform: ITargetPlatform): boolean;
+var
+  originalFiles : TStringList;
+  antPattern : IAntPattern;
+  patterns : TArray<IFileSystemPattern>;
+  sPattern : string;
+begin
+  result := true;
+  originalFiles := TStringList.Create;
+  antPattern := TAntPattern.Create(baseFolder);
+  try
+    originalFiles.Assign(targetPlatform.Files);
+    targetPlatform.Files.Clear;
+    for var i := 0 to originalFiles.Count -1 do
+    begin
+      if TPathUtils.ContainsWildcard(originalFiles[i]) then
+      begin
+        if TPathUtils.IsRelativePath(originalFiles[i]) then
+        begin
+          sPattern := TPath.Combine(baseFolder, originalFiles[i]);
+          sPattern := TPathUtils.CompressRelativePath('',sPattern);
+        end
+        else
+          sPattern := originalFiles[i];
+
+        patterns := antPattern.Expand(sPattern);
+        ProcessPatterns(baseFolder, patterns,targetPlatform );
+      end
+      else
+        targetPlatform.Files.Add(originalFiles[i]);
+
+    end;
+
+
+
+  finally
+    originalFiles.Free;
+  end;
 end;
 
 function TProjectDefinition.Generate: boolean;
 var
   targetPlatform : ITargetPlatform;
   sPackagesFolder : string;
-
+  sBaseFolder : string;
+  packageFolder : string;
 begin
   result :=  ApplyTemplates;
   if not result then
@@ -155,23 +213,29 @@ begin
   if not result then
     exit;
 
+  if TPathUtils.IsRelativePath(FFileName) then
+    FFileName := TPathUtils.CompressRelativePath(GetCurrentDir, FFileName);
+
+  sBaseFolder := ExtractFilePath(FFileName);
+
   sPackagesFolder := FPackagesFolder;
 
   if TPathUtils.IsRelativePath(sPackagesFolder) then
   begin
-    if TPathUtils.IsRelativePath(FFileName) then
-    begin
-      FFileName := TPath.Combine(GetCurrentDir, FFileName);
-    end;
-    sPackagesFolder := TPath.Combine(TPath.GetDirectoryName(FFileName), sPackagesFolder);
-    sPackagesFolder := ExpandFileName(sPackagesFolder);
+    sPackagesFolder := TPath.Combine(sBaseFolder, sPackagesFolder);
+    sPackagesFolder := TPathUtils.CompressRelativePath('', sPackagesFolder);
   end;
-
 
 
   for targetPlatform in FTargetPlatforms do
   begin
     Writeln('Generating package for Compiler Version [' + CompilerToString(targetPlatform.CompilerVersion) + ']');
+    //expand any ant patterns.
+    packageFolder := IncludeTrailingPathDelimiter(TPath.Combine(sPackagesFolder, targetPlatform.FolderNameTemplate));
+    result := ExpandFiles(packageFolder, targetPlatform);
+    if not result then
+      exit;
+
     result := result and TGenerator.Generate(self, targetPlatform, sPackagesFolder);
     if not result then
       exit;
@@ -219,6 +283,7 @@ begin
   list.Add('compilerVersion=' + CompilerToCompilerVersionIntStr(targetPlatform.CompilerVersion));
   list.Add('bdsVersion=' + CompilerToBDSVersion(targetPlatform.CompilerVersion));
   list.Add('libSuffix=' + CompilerToLibSuffix(targetPlatform.CompilerVersion));
+  list.Add('name=' + FName);
 end;
 
 class function TProjectDefinition.InternalReadDefinitionJson(const fileName: string; const jsonObject: TJsonObject): IProjectDefinition;
@@ -306,20 +371,8 @@ begin
       exit(false);
     end;
   end;
-  sValue := jsonObject.S['packageType'];
-  if sValue = '' then
-  begin
-    WriteLn('ERROR: Required property [packageType] is empty or missing');
-    exit(false);
-  end;
-  FPackageType := StringToPackageType(sValue);
-  if FPackageType = TPackageType.Invalid then
-  begin
-    WriteLn('ERROR: packageType [' + sValue + '] is not valid (Runtime or Designtime)');
-    exit(false);
-  end;
 
-  //default project type is bpl
+  //default project type is package
   sValue := jsonObject.S['projectType'];
   if sValue <> '' then
   begin
@@ -330,6 +383,17 @@ begin
       exit(false);
     end;
   end;
+
+  if FProjectType = TProjectType.Package then
+  begin
+    FPackageType := StringToPackageType(sValue);
+    if FPackageType = TPackageType.Invalid then
+    begin
+      WriteLn('ERROR: packageType [' + sValue + '] is not valid (Runtime or Designtime)');
+      exit(false);
+    end;
+  end;
+
 
 
   if jsonObject.Contains('templates') then
@@ -431,6 +495,7 @@ begin
         targetPlatform.LibSuffix := regEx.Replace(targetPlatform.LibSuffix, evaluator);
         targetPlatform.FolderNameTemplate := Trim(regEx.Replace(targetPlatform.FolderNameTemplate, evaluator));
         targetPlatform.DescriptionTemplate := Trim(regEx.Replace(targetPlatform.DescriptionTemplate, evaluator));
+        targetPlatform.MainSourceTemplate := Trim(regEx.Replace(targetPlatform.MainSourceTemplate, evaluator));
         //we need this for the dpk options
         tokenList.Add('description=' + targetPlatform.DescriptionTemplate);
 

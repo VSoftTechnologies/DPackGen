@@ -47,10 +47,6 @@ type
     class procedure GetResourceVersionNumbers(out AMajor, AMinor, ARelease, ABuild: Integer);
   end;
 
-  TPathUtils = class
-  public
-    class function IsRelativePath(const value : string) : boolean;
-  end;
 
 
 implementation
@@ -128,8 +124,8 @@ end;
 function CompilerToString(const value : TCompilerVersion) : string;
 begin
   result := GetEnumName(TypeInfo(TCompilerVersion), ord(value));
-  if result.StartsWith('D') then
-    Delete(result, 1, 1); // remove D
+//  if result.StartsWith('D') then
+//    Delete(result, 1, 1); // remove D
   result := StringReplace(result, '_', '.', [rfReplaceAll]);
 end;
 
@@ -410,11 +406,6 @@ begin
   result := Format('%d.%d.%d.%d',[Major,Minor,Release,Build]);
 end;
 
-
-class function TPathUtils.IsRelativePath(const value : string) : boolean;
-begin
-  result := (not TPath.IsUNCPath(value) and value.StartsWith('.\')) or System.SysUtils.IsRelativePath(value);
-end;
 
 
 function SpaceString(stringLen : integer) : string;

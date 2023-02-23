@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{39203CAB-5FBB-439E-A2D0-F1D8BA6C7E98}</ProjectGuid>
         <ProjectVersion>19.5</ProjectVersion>
@@ -14,7 +14,7 @@
         <DPMCompiler>11.0</DPMCompiler>
         <DPMCache Condition="'$(DPMCache)' == ''">$(APPDATA)\.dpm\packages</DPMCache>
         <DPM>$(DPMCache)\$(DPMCompiler)\$(Platform)</DPM>
-        <DPMSearch Condition="'$(Platform)'=='Win32'">$(DPM)\Spring4D.Base\2.0.0-beta.2\lib;$(DPM)\VSoft.JsonDataObjects\0.1.3\lib;$(DPM)\VSoft.CommandLine\0.1.3\lib;</DPMSearch>
+        <DPMSearch Condition="'$(Platform)'=='Win32'">$(DPM)\VSoft.SemanticVersion\0.2.3\lib;$(DPM)\VSoft.JsonDataObjects\0.1.3\lib;$(DPM)\VSoft.CommandLine\0.1.3\lib;$(DPM)\VSoft.AntPatterns\0.1.3\lib;$(DPM)\Spring4D.Base\2.0.0-beta.2\lib;</DPMSearch>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -111,7 +111,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
-        <Debugger_RunParams>generate ..\..\..\examples\VSoft.MessagingR.pkdef</Debugger_RunParams>
+        <Debugger_RunParams>generate I:\Github\DelphiPackageManager\DPMMaster\Source\DPMIDE.pkdef</Debugger_RunParams>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
@@ -138,6 +138,8 @@
         <DCCReference Include="DPackGen.Types.pas"/>
         <DCCReference Include="DPackGen.Banner.pas"/>
         <DCCReference Include="DPackGen.MSXML.pas"/>
+        <DCCReference Include="Utils\DPackGen.Utils.Path.pas"/>
+        <DCCReference Include="DPackGen.PackageReference.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -1023,8 +1025,10 @@
         <ProjectFileVersion>12</ProjectFileVersion>
         <DPM>
             <PackageReference id="Spring4D.Base" platform="Win32" version="2.0.0-beta.2"/>
+            <PackageReference id="VSoft.AntPatterns" platform="Win32" version="0.1.3"/>
             <PackageReference id="VSoft.CommandLine" platform="Win32" version="0.1.3"/>
             <PackageReference id="VSoft.JsonDataObjects" platform="Win32" version="0.1.3"/>
+            <PackageReference id="VSoft.SemanticVersion" platform="Win32" version="0.2.3"/>
         </DPM>
     </ProjectExtensions>
     <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
